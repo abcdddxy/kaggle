@@ -1,3 +1,7 @@
 *.csv
 *.txt
 *.xlsx
+*.zip
+*.7z
+*.pkl
+*.data

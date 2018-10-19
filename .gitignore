@@ -6,3 +6,11 @@
 *.pkl
 *.data
 *.dat
+*.pk
+*.jpg
+*.bin
+*.npy
+*.npz
+*.xml
+*.iml
+*.ckpt

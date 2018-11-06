@@ -9,7 +9,7 @@ import os
 import sys
 import pyltp
 
-personal_seg_dict = '../../../../data/new/merge_sgns_bigram_char300.txt'
+personal_seg_dict = '../../../data/new/merge_sgns_bigram_char300.txt'
 ltp_models_dir = os.environ['LTP_MODELS_DIR']
 
 model_files = os.listdir(ltp_models_dir)

@@ -51,7 +51,6 @@ class Dictionary(object):
                 vecs.append(normal_list)
         self.pretrained_eord_emnedding = np.array(vecs, dtype=np.float32)
 
-
     def _stat_for(self, tag, data):
         if tag == "tag":
             tc = defaultdict(int)
@@ -66,26 +65,58 @@ class Dictionary(object):
                 i2t[token_id] = token
             return tc, t2i, i2t
         else:
+            # 纯词向量
+            # tc = defaultdict(int)
+            # tags = tag.copy()
+            # for sample in data:
+            #     for tag in ["prefix", "title"]:
+            #         for token in sample[tag]:
+            #             if token == "PAD":
+            #                 continue
+            #             tc[token] += 1
+            #     for segment in sample["segments"]:
+            #         for token in segment:
+            #             if token == "PAD":
+            #                 continue
+            #             tc[token] += 1
+            # t2i = {"UNK": 0, "PAD": 1}
+            # i2t = {0: "UNK", 1: "PAD"}
+            # for token in tc:
+            #     if tc[token] >= 2:
+            #         token_id = len(t2i)
+            #         t2i[token] = token_id
+            #         i2t[token_id] = token
+
+            # 加入字向量
             tc = defaultdict(int)
+            lc = defaultdict(int)
             tags = tag.copy()
             for sample in data:
-                for tag in ["prefix", "title", "texts"]:
+                for tag in ["prefix", "title"]:
                     for token in sample[tag]:
-                        if token == "PAD":
-                            continue
-                        tc[token] += 1
+                        if token != "PAD":
+                            tc[token] += 1
+                            for letter in token:
+                                lc[letter] += 1
                 for segment in sample["segments"]:
                     for token in segment:
-                        if token == "PAD":
-                            continue
-                        tc[token] += 1
+                        if token != "PAD":
+                            tc[token] += 1
+                            for letter in token:
+                                lc[letter] += 1
             t2i = {"UNK": 0, "PAD": 1}
             i2t = {0: "UNK", 1: "PAD"}
             for token in tc:
                 token_id = len(t2i)
                 t2i[token] = token_id
                 i2t[token_id] = token
-            return tc, t2i, i2t
+            l_t2i = {"UNK": 0, "PAD": 1}
+            l_i2t = {0: "UNK", 1: "PAD"}
+            for token in lc:
+                token_id = len(l_t2i)
+                l_t2i[token] = token_id
+                l_i2t[token_id] = token
+            return tc, t2i, i2t, lc, l_t2i, l_i2t
 
     def _generate_token_to_id(self, data):
         tc, t2i, i2t = self._stat_for("tag", data)
@@ -93,13 +124,17 @@ class Dictionary(object):
         self.token_to_id["tag"] = t2i
         self.id_to_token["tag"] = i2t
 
-        tc, t2i, i2t = self._stat_for(["prefix", "title", "texts", "segments"], data)
+        # texts
+        tc, t2i, i2t, lc, l_t2i, l_i2t = self._stat_for(["prefix", "title", "segments"], data)
         self.token_count["words"] = tc
         self.token_to_id["words"] = t2i
         self.id_to_token["words"] = i2t
+        self.token_count["letters"] = lc
+        self.token_to_id["letters"] = l_t2i
+        self.id_to_token["letters"] = l_i2t
 
     def save(self, path):
-        for tag in ["tag", "words"]:
+        for tag in ["tag", "words", "letters"]:
             with open(os.path.join(path, tag), 'w', encoding="utf-8") as of:
                 for _token, _id in six.iteritems(self.token_to_id[tag]):
                     of.write("%s\t%d\t%d\n" % (_token, _id, self.token_count[tag][_token]))
@@ -108,7 +143,7 @@ class Dictionary(object):
             if self.cutoff is not None:
                 info["cutoff"] = self.cutoff
             json.dump(info, of)
-    
+
     def load(self, path):
         tags = os.listdir(path)
         for tag in tags:
@@ -135,8 +170,8 @@ class Dictionary(object):
     def to_id(self, samples_or_features, tag=None):
         if tag is None:
             ret = [
-                {tag: sample[tag] if tag not in ["prefix", "title", "texts", "segments", "tag", "targets"] else self.to_id(sample[tag], tag) for tag in sample}
-                for sample in samples_or_features
+                {tag: sample[tag] if tag not in ["prefix", "title", "texts", "segments", "letters", "tag", "targets"] else self.to_id(sample[tag], tag)
+                 for tag in sample} for sample in samples_or_features
             ]
             return ret
         else:
@@ -146,12 +181,19 @@ class Dictionary(object):
                 ]
             if tag in ["prefix", "title", "texts"]:
                 return [
-                    self.token_to_id["words"][token] if token in self.token_to_id["words"] else self.token_to_id["words"]["UNK"] 
+                    self.token_to_id["words"][token] if token in self.token_to_id["words"] else self.token_to_id["words"]["UNK"]
                     for token in samples_or_features
                 ]
             if tag == "segments":
                 return [
-                    [self.token_to_id["words"][token] if token in self.token_to_id["words"] else self.token_to_id["words"]["UNK"] for token in segment]
+                    [self.token_to_id["words"][token] if token in self.token_to_id["words"] else self.token_to_id["words"]["UNK"] for token in
+                     segment]
+                    for segment in samples_or_features
+                ]
+            if tag == "letters":
+                return [
+                    [self.token_to_id["letters"][token] if token in self.token_to_id["letters"] else self.token_to_id["letters"]["UNK"] for token in
+                     segment]
                     for segment in samples_or_features
                 ]
             if tag == "targets":
@@ -173,12 +215,10 @@ class Dictionary(object):
 
     def pad_id(self):
         return {
-            tag: self.token_to_id[tag]['PAD']
-            for tag in self.token_to_id if tag != "targets"
+            tag: self.token_to_id[tag]['PAD'] for tag in self.token_to_id if tag != "targets"
         }
 
     def vocab_size(self):
         return {
-            tag: len(self.token_to_id[tag])
-            for tag in self.token_to_id
+            tag: len(self.token_to_id[tag]) for tag in self.token_to_id
         }

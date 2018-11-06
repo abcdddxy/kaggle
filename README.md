@@ -20,4 +20,16 @@ Drive Risk--中国平安驾驶风险预测（弃赛）
 
 Tecent18--2018腾讯赛（初赛99）
 
+CarTopic--2018BDCI（初赛23）
+
+iflyCtr--科大讯飞点击率（初赛99）
+
+oppo--oppo搜索转化率（进行中）
+
+Kuaishou--2018BDC（初赛100+，复赛3）
+
+Xiecheng--携程房态预测（初赛3，复赛1）
+
+TerrAttack--恐怖分子风险预测
+
 tf--tensorflow相关教程及DCFN模型

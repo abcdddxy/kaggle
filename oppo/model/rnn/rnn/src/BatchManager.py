@@ -24,8 +24,7 @@ class BatchManager(object):
         manager.batch_data = [
             manager._construct_batch(manager._padding_batch(
                 manager.data[ibatch * manager.batch_size:min((ibatch + 1) * manager.batch_size, manager.len_data)]
-            ))
-            for ibatch in range(manager.num_batch)
+            )) for ibatch in range(manager.num_batch)
         ]
         return manager
 
@@ -49,14 +48,13 @@ class BatchManager(object):
     def batch(self):
         if self.epoch <= 0:
             raise EOFError("epoch exhausted.")
-
         batch = self._batch_noshuffle()
         return batch
 
     def _padding_batch(self, batch):
         padding_size = dict()
-        for tag in ["prefix", "title", "texts", "segments"]:
-            if tag ==  "segments":
+        for tag in ["prefix", "title", "texts", "segments", "letters"]:
+            if (tag == "segments") | (tag == "letters"):
                 padding_size[tag] = max([max([len(segment) for segment in sample[tag]]) for sample in batch])
             else:
                 padding_size[tag] = max([len(sample[tag]) for sample in batch])
@@ -68,12 +66,17 @@ class BatchManager(object):
                     padding_result[tag] = np.asarray(sample[tag] + [self.pad_id["words"]] * (padding_size[tag] - len(sample[tag])), np.int32)
                 elif tag == "segments":
                     padding_result[tag] = [
-                                np.asarray(segment + [self.pad_id["words"]] * (padding_size[tag] - len(segment)), np.int32)
-                                for segment in sample[tag]
-                         ]
+                        np.asarray(segment + [self.pad_id["words"]] * (padding_size[tag] - len(segment)), np.int32)
+                        for segment in sample[tag]
+                    ]
+                elif tag == "letters":
+                    padding_result[tag] = [
+                        np.asarray(segment + [self.pad_id["letters"]] * (padding_size[tag] - len(segment)), np.int32)
+                        for segment in sample[tag]
+                    ]
                 else:
                     padding_result[tag] = sample[tag]
-                
+
             result.append(padding_result)
         return result
 

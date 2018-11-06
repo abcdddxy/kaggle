@@ -7,7 +7,7 @@
 function run()
 {
     name=$1
-    $PY3 -u ./src/${name} > ./log/${name} 2>&1 &
+    $PY3 ./src/${name} > ./log/${name} 2>&1 &
 }
 
 

@@ -57,8 +57,8 @@ def gru_item(model_inputs, model_inputs_dim, model_inputs_len, keep_prob, layer_
                 gru_cell_backward = tf.contrib.rnn.MultiRNNCell([tf.contrib.rnn.GRUCell(gru_size) for _ in range(gru_layers)])
             gru_cell_forward = tf.contrib.rnn.DropoutWrapper(gru_cell_forward, output_keep_prob=keep_prob)
             gru_cell_backward = tf.contrib.rnn.DropoutWrapper(gru_cell_backward, output_keep_prob=keep_prob)
-            #             gru_cell_forward = tf.contrib.rnn.AttentionCellWrapper(gru_cell_forward, attn_length=padding_len)
-            #             gru_cell_backward = tf.contrib.rnn.AttentionCellWrapper(gru_cell_backward, attn_length=padding_len)
+            gru_cell_forward = tf.contrib.rnn.AttentionCellWrapper(gru_cell_forward, attn_length=padding_len)
+            gru_cell_backward = tf.contrib.rnn.AttentionCellWrapper(gru_cell_backward, attn_length=padding_len)
             gru_outputs, _ = tf.nn.bidirectional_dynamic_rnn(gru_cell_forward, gru_cell_backward, inputs=model_inputs,
                                                              sequence_length=model_inputs_len, dtype=tf.float32)
             gru_outputs = tf.concat(gru_outputs, 2)
@@ -67,8 +67,8 @@ def gru_item(model_inputs, model_inputs_dim, model_inputs_len, keep_prob, layer_
             gru_cell_backward = tf.nn.rnn_cell.GRUCell(gru_size, reuse=tf.AUTO_REUSE)
             gru_cell_forward = tf.contrib.rnn.DropoutWrapper(gru_cell_forward, output_keep_prob=keep_prob)
             gru_cell_backward = tf.contrib.rnn.DropoutWrapper(gru_cell_backward, output_keep_prob=keep_prob)
-            #             gru_cell_forward = tf.contrib.rnn.AttentionCellWrapper(gru_cell_forward, attn_length=padding_len)
-            #             gru_cell_backward = tf.contrib.rnn.AttentionCellWrapper(gru_cell_backward, attn_length=padding_len)
+            gru_cell_forward = tf.contrib.rnn.AttentionCellWrapper(gru_cell_forward, attn_length=padding_len)
+            gru_cell_backward = tf.contrib.rnn.AttentionCellWrapper(gru_cell_backward, attn_length=padding_len)
             model_inputs_forward = model_inputs
             model_inputs_backward = tf.reverse(model_inputs, [1])
             forward_outputs, forward_final_state = tf.nn.dynamic_rnn(gru_cell_forward, model_inputs_forward, dtype=tf.float32)
@@ -78,16 +78,16 @@ def gru_item(model_inputs, model_inputs_dim, model_inputs_len, keep_prob, layer_
             gru_outputs = tf.nn.relu(gru_outputs)
 
         # 单层attention
-        with tf.variable_scope("attention"):
-            hidden_size = gru_outputs.shape[2].value
-
-            attention_w = tf.get_variable("attention_w", initializer=tf.truncated_normal([hidden_size, attention_size], stddev=0.1))
-            attention_b = tf.get_variable("attention_b", initializer=tf.constant(0.1, shape=[attention_size]))
-            attention_u = tf.get_variable("attention_u", initializer=tf.truncated_normal([attention_size], stddev=0.1))
-            v = tf.tanh(tf.tensordot(gru_outputs, attention_w, axes=1) + attention_b)
-            vu = tf.tensordot(v, attention_u, axes=1)
-            alphas = tf.nn.softmax(vu)
-            output = tf.reduce_sum(gru_outputs * tf.expand_dims(alphas, -1), 1)
+        # with tf.variable_scope("attention"):
+        #     hidden_size = gru_outputs.shape[2].value
+        #
+        #     attention_w = tf.get_variable("attention_w", initializer=tf.truncated_normal([hidden_size, attention_size], stddev=0.1))
+        #     attention_b = tf.get_variable("attention_b", initializer=tf.constant(0.1, shape=[attention_size]))
+        #     attention_u = tf.get_variable("attention_u", initializer=tf.truncated_normal([attention_size], stddev=0.1))
+        #     v = tf.tanh(tf.tensordot(gru_outputs, attention_w, axes=1) + attention_b)
+        #     vu = tf.tensordot(v, attention_u, axes=1)
+        #     alphas = tf.nn.softmax(vu)
+        #     output = tf.reduce_sum(gru_outputs * tf.expand_dims(alphas, -1), 1)
 
             # 多层attention layer
         #         def attention_layer(inputs, layer_name):
